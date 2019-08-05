@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flash_chat_flutter_app/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatScreen extends StatefulWidget {
   static const String screen = 'chat_screen';
@@ -11,7 +12,9 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _auth = FirebaseAuth.instance;
+  final _firestore = Firestore.instance;
   FirebaseUser loggedInUser;
+  String messageText;
 
   @override
   void initState() {
@@ -32,6 +35,31 @@ class _ChatScreenState extends State<ChatScreen> {
       print('Error $error');
     }
   }
+
+  // method to get messages from database
+//  void getMessage() async {
+//    try {
+//      final messages = await _firestore.collection('messages').getDocuments();
+//      for (var message in messages.documents) {
+//        print(message.data);
+//      }
+//    } catch (error) {
+//      print('Error $error');
+//    }
+//  }
+
+  void messagesStream() async {
+    try {
+      await for  (var snapshot in _firestore.collection('messages').snapshots()){
+        for (var message in snapshot.documents) {
+          print(message.data);
+        }
+      }
+    } catch (error) {
+      print('Error: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,13 +91,18 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: TextField(
                       onChanged: (value) {
                         //Do something with the user input.
+                        messageText = value;
                       },
                       decoration: kMessageTextFieldDecoration,
                     ),
                   ),
                   FlatButton(
                     onPressed: () {
-                      //Implement send functionality.
+                      // Implement send functionality.
+                      _firestore.collection('messages').add({
+                        'text': messageText,
+                        'sender': loggedInUser.email,
+                      });
                     },
                     child: Text(
                       'Send',
